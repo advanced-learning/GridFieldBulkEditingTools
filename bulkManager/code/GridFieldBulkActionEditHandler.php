@@ -23,9 +23,9 @@ class GridFieldBulkActionEditHandler extends GridFieldBulkActionHandler
      * @var array
      */
     private static $url_handlers = array(
-    'bulkEdit/bulkEditForm' => 'bulkEditForm',
-    'bulkEdit/recordEditForm' => 'recordEditForm',
-    'bulkEdit' => 'index',
+        'edit/bulkEditForm' => 'bulkEditForm',
+        'edit/recordEditForm' => 'recordEditForm',
+        'edit' => 'index',
     );
 
     /**
@@ -37,7 +37,7 @@ class GridFieldBulkActionEditHandler extends GridFieldBulkActionHandler
      */
     public function Link($action = null)
     {
-        return Controller::join_links(parent::Link(), 'bulkEdit', $action);
+        return Controller::join_links(parent::Link(), 'edit', $action);
     }
 
     /**

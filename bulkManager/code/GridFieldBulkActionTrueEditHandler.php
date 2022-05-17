@@ -19,8 +19,8 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
      * @var array
      */
     private static $url_handlers = [
-        'trueBulkEdit/bulkEditForm' => 'bulkEditForm',
-        'trueBulkEdit' => 'index',
+        'trueEdit/bulkEditForm' => 'bulkEditForm',
+        'trueEdit' => 'index',
     ];
 
     /**
@@ -30,7 +30,7 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
      */
     public function Link($action = null): string
     {
-        return Controller::join_links(parent::Link(), 'trueBulkEdit', $action);
+        return Controller::join_links(parent::Link(), 'trueEdit', $action);
     }
 
     /**
