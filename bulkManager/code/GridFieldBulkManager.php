@@ -19,6 +19,45 @@ class GridFieldBulkManager implements GridField_HTMLProvider, GridField_ColumnPr
         'actions' => array(),
     );
 
+    protected $defaultActions = array(
+        'edit' => array(
+            'label' => 'Edit (multiple forms)',
+            'handler' => 'GridFieldBulkActionEditHandler',
+            'config' => array(
+                'isAjax' => false,
+                'icon' => 'pencil',
+                'isDestructive' => false,
+            ),
+        ),
+        'trueEdit' => array(
+            'label' => 'Edit (one form)',
+            'handler' => 'GridFieldBulkActionTrueEditHandler',
+            'config' => array(
+                'isAjax' => false,
+                'icon' => 'pencil',
+                'isDestructive' => false,
+            ),
+        ),
+        'unLink' => array(
+            'label' => 'Unlink',
+            'handler' => 'GridFieldBulkActionUnlinkHandler',
+            'config' => array(
+                'isAjax' => true,
+                'icon' => 'chain--minus',
+                'isDestructive' => false,
+            ),
+        ),
+        'delete' => array(
+            'label' => 'Delete',
+            'handler' => 'GridFieldBulkActionDeleteHandler',
+            'config' => array(
+                'isAjax' => true,
+                'icon' => 'decline',
+                'isDestructive' => true,
+            ),
+        ),
+    );
+
     /**
      * GridFieldBulkManager component constructor.
      *
@@ -32,44 +71,7 @@ class GridFieldBulkManager implements GridField_HTMLProvider, GridField_ColumnPr
         }
 
         if ($defaultActions) {
-            $this->config['actions'] = array(
-                'bulkEdit' => array(
-                    'label' => 'Edit (multiple forms)',
-                    'handler' => 'GridFieldBulkActionEditHandler',
-                    'config' => array(
-                        'isAjax' => false,
-                        'icon' => 'pencil',
-                        'isDestructive' => false,
-                    ),
-                ),
-                'trueBulkEdit' => array(
-                    'label' => 'Edit (one form)',
-                    'handler' => 'GridFieldBulkActionTrueEditHandler',
-                    'config' => array(
-                        'isAjax' => false,
-                        'icon' => 'pencil',
-                        'isDestructive' => false,
-                    ),
-                ),
-                'unLink' => array(
-                    'label' => _t('GRIDFIELD_BULK_MANAGER.UNLINK_SELECT_LABEL', 'UnLink'),
-                    'handler' => 'GridFieldBulkActionUnlinkHandler',
-                    'config' => array(
-                        'isAjax' => true,
-                        'icon' => 'chain--minus',
-                        'isDestructive' => false,
-                    ),
-                ),
-                'delete' => array(
-                    'label' => _t('GRIDFIELD_BULK_MANAGER.DELETE_SELECT_LABEL', 'Delete'),
-                    'handler' => 'GridFieldBulkActionDeleteHandler',
-                    'config' => array(
-                        'isAjax' => true,
-                        'icon' => 'decline',
-                        'isDestructive' => true,
-                    ),
-                ),
-            );
+            $this->config['actions'] = $this->defaultActions;
         }
     }
 
@@ -134,6 +136,12 @@ class GridFieldBulkManager implements GridField_HTMLProvider, GridField_ColumnPr
     {
         if (array_key_exists($name, $this->config['actions'])) {
             user_error("Bulk action '$name' already exists.", E_USER_ERROR);
+        }
+
+        if (array_key_exists($name, $this->defaultActions)) {
+            $this->config['actions'][$name] = $this->defaultActions[$name];
+
+            return $this;
         }
 
         if (!$label) {
