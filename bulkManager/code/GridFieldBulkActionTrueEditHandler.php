@@ -74,8 +74,16 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
         $actions = new FieldList();
 
         $actions->push(
-            FormAction::create('doSave', 'Save')
+            FormAction::create('doSave', 'Save (as multiple writes, including onAfterWrite logic etc.)')
                 ->setAttribute('id', 'bulkEditingSaveBtn')
+                ->addExtraClass('ss-ui-action-constructive')
+                ->setAttribute('data-icon', 'accept')
+                ->setUseButtonTag(true)
+        );
+
+        $actions->push(
+            FormAction::create('doSave2', 'Save (as one UPDATE, no onAfterWrite logic etc.)')
+                ->setAttribute('id', 'bulkEditingSaveBtn2')
                 ->addExtraClass('ss-ui-action-constructive')
                 ->setAttribute('data-icon', 'accept')
                 ->setUseButtonTag(true)
@@ -153,14 +161,30 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
     }
 
     /**
-     * Handles bulkEditForm submission
-     * and parses and saves each records data.
-     * @param array $data Submitted form data.
-     * @param Form  $form Form
+     * Call the below, setting $asRawUpdate to true.
+     * @param array  $data    Submitted form data.
+     * @param Form   $form    Form
+     * @param object $someObj IDK what this is, but we don't use it.
      * @return string
      * @throws ValidationException
      */
-    public function doSave(array $data, Form $form): string
+    public function doSave2(array $data, Form $form, object $someObj): string
+    {
+        return $this->doSave($data, $form, $someObj, true);
+    }
+
+    /**
+     * Handles bulkEditForm submission
+     * and parses and saves each records data.
+     * @param array        $data        Submitted form data.
+     * @param Form         $form        Form
+     * @param object       $someObj     IDK what this is, but we don't use it.
+     * @param boolean|null $asRawUpdate Set this to true to perform the save as one UPDATE sql query. Faster but BEWARE
+     *                                  that onAfterWrite (etc.) logic will NOT be called.
+     * @return string
+     * @throws ValidationException
+     */
+    public function doSave(array $data, Form $form, object $someObj, ?bool $asRawUpdate = false): string
     {
         $form->saveInto($this->singleton);
         $changes = $this->singleton->getChangedFields(true, DataObject::CHANGE_VALUE);
@@ -169,29 +193,50 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
 
         $writes = 0;
 
-        foreach ($data['records'] as $id) {
-            $record = DataObject::get_by_id($modelClass, $id);
-            if ($record) {
-                foreach ($changes as $field => $change) {
-                    $record->$field = $change['after'];
-                }
+        $forceUnchangedFields = array_values(
+            array_filter(
+                array_keys($data),
+                static fn($k) => preg_match('/_UnchangedCheckbox$/', $k)
+            )
+        );
 
-                $forceUnchangedKeys = array_values(
-                    array_filter(
-                        array_keys($data),
-                        static fn($k) => preg_match('/_UnchangedCheckbox$/', $k)
-                    )
-                );
-                foreach ($forceUnchangedKeys as $forceUnchangedKey) {
-                    $field = strtok($forceUnchangedKey, '_');
-                    if ($record->hasDatabaseField($field)) {
-                        $record->$field = $data[$field] ?? null;
+        $fields = [];
+        foreach ($changes as $field => $change) {
+            if ($this->singleton->hasDatabaseField($field)) {
+                $fields[$field] = $change['after'];
+            }
+        }
+        foreach ($forceUnchangedFields as $field) {
+            $field = strtok($field, '_');
+            if ($this->singleton->hasDatabaseField($field)) {
+                $fields[$field] = $data[$field] ?? null;
+            }
+        }
+
+        if ($asRawUpdate) {
+            $idsString = implode(',', $data['records']);
+
+            DB::manipulate([
+                $modelClass => [
+                    'command' => 'update',
+                    'fields' => $fields,
+                    'where' => "ID IN ($idsString)"
+                ]
+            ]);
+
+            $writes = DB::affected_rows();
+        } else {
+            foreach ($data['records'] as $id) {
+                $record = DataObject::get_by_id($modelClass, $id);
+                if ($record) {
+                    foreach ($fields as $field => $value) {
+                        $record->$field = $value;
                     }
-                }
 
-                if ($record->isChanged()) {
-                    $record->write();
-                    $writes++;
+                    if ($record->isChanged()) {
+                        $record->write();
+                        $writes++;
+                    }
                 }
             }
         }
