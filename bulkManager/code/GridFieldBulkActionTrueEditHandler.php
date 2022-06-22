@@ -74,7 +74,7 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
         $actions = new FieldList();
 
         $actions->push(
-            FormAction::create('doSave', 'Save (as multiple writes, including onAfterWrite logic etc.)')
+            FormAction::create('doSave', 'Save (as multiple writes, including validation and onAfterWrite logic etc.)')
                 ->setAttribute('id', 'bulkEditingSaveBtn')
                 ->addExtraClass('ss-ui-action-constructive')
                 ->setAttribute('data-icon', 'accept')
@@ -82,7 +82,10 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
         );
 
         $actions->push(
-            FormAction::create('doSave2', 'Save (as one UPDATE, no onAfterWrite logic etc.)')
+            FormAction::create(
+                'doSave2',
+                'Save (as one UPDATE bypassing SilverStripe, thus no validation or onAfterWrite logic etc. will be called)'
+            )
                 ->setAttribute('id', 'bulkEditingSaveBtn2')
                 ->addExtraClass('ss-ui-action-constructive')
                 ->setAttribute('data-icon', 'accept')
@@ -180,7 +183,8 @@ class GridFieldBulkActionTrueEditHandler extends GridFieldBulkActionHandler
      * @param Form         $form        Form
      * @param object       $someObj     IDK what this is, but we don't use it.
      * @param boolean|null $asRawUpdate Set this to true to perform the save as one UPDATE sql query. Faster but BEWARE
-     *                                  that onAfterWrite (etc.) logic will NOT be called.
+     *                                  that validation and onAfterWrite (etc.) logic will NOT be called, since the ORM
+     *                                  is bypassed.
      * @return string
      * @throws ValidationException
      */
